@@ -5,25 +5,24 @@ function fetchBooks() {
     const query = document.getElementById("searchQuery").value || "programming";
 
     fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&key=${API_KEY}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             books = [];
             data.items.slice(0, 10).forEach(item => {
                 books.push({
-                    id: item.id,
+                    id: item.id.substring(0, 6),
                     name: item.volumeInfo.title || "N/A",
                     author: item.volumeInfo.authors
                         ? item.volumeInfo.authors.join(", ")
                         : "Unknown",
-                    issued: false
+                    issued: false,
+                    issueDate: "-",
+                    returnDate: "-"
                 });
             });
             displayBooks();
         })
-        .catch(error => {
-            console.error("Error fetching books:", error);
-            alert("Failed to load books");
-        });
+        .catch(() => alert("Error loading books"));
 }
 
 function displayBooks() {
@@ -33,10 +32,12 @@ function displayBooks() {
     books.forEach((book, index) => {
         table.innerHTML += `
             <tr>
-                <td>${book.id.substring(0, 6)}</td>
+                <td>${book.id}</td>
                 <td>${book.name}</td>
                 <td>${book.author}</td>
                 <td>${book.issued ? "Issued" : "Available"}</td>
+                <td>${book.issueDate}</td>
+                <td>${book.returnDate}</td>
                 <td>
                     <button class="${book.issued ? 'return' : 'issue'}"
                         onclick="toggleIssue(${index})">
@@ -49,6 +50,18 @@ function displayBooks() {
 }
 
 function toggleIssue(index) {
-    books[index].issued = !books[index].issued;
+    const today = new Date().toLocaleDateString();
+
+    if (!books[index].issued) {
+        // Issue book
+        books[index].issued = true;
+        books[index].issueDate = today;
+        books[index].returnDate = "-";
+    } else {
+        // Return book
+        books[index].issued = false;
+        books[index].returnDate = today;
+    }
+
     displayBooks();
 }
